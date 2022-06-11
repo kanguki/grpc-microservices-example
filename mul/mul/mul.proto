@@ -1,5 +1,6 @@
 syntax = "proto3";
-option go_package = "github.com/kanguki/grpc-microservices-example/mul/mul";
+// option go_package = "github.com/kanguki/grpc-microservices-example/mul/mul";
+package mul;
 service Mul {
 	rpc Do(Request) returns (Response) {}
 }

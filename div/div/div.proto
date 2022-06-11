@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "github.com/kanguki/grpc-microservices-example/div/div";
+package div;
 service Div {
 	rpc Do(Request) returns (Response) {}
 }

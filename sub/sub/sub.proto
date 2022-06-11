@@ -1,5 +1,6 @@
 syntax = "proto3";
-option go_package = "github.com/kanguki/grpc-microservices-example/sub/sub";
+// option go_package = "github.com/kanguki/grpc-microservices-example/sub/sub";
+package sub;
 service Sub {
 	rpc Do(Request) returns (Response) {}
 }

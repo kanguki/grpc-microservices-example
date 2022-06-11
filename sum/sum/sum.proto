@@ -1,5 +1,6 @@
 syntax = "proto3";
-option go_package = "github.com/kanguki/grpc-microservices-example/sum/sum";
+// option go_package = "github.com/kanguki/grpc-microservices-example/sum/sum";
+package sum;
 service Sum {
 	rpc Do(Request) returns (Response) {}
 }
