@@ -12,7 +12,7 @@ type Service struct {
 }
 
 func (s Service) Do(ctx context.Context, req *Request) (*Response, error) {
-	log.Log("Do get called with request %v\n", *req)
+	log.Log("Do get called with request %v", *req)
 	res := Response{}
 	if req.Term1 > s.Max || req.Term2 > s.Max ||
 		req.Term1 < s.Min || req.Term2 < s.Min {

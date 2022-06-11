@@ -21,7 +21,7 @@ func main() {
 	grpcServer := grpc.NewServer()
 	mulService := mul.Service{Max: 1000, Min: -1000, MaxFreeTier: 10, MinFreeTier: -10}
 	mul.RegisterMulServer(grpcServer, mulService)
-	log.Log("Starting grpc service on port %v\n", port)
+	log.Log("Starting grpc service on port %v", port)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Log("error serving grpc server: %v", err)
 	}

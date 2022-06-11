@@ -7,5 +7,5 @@ import (
 
 func Log(formatOrValue interface{}, values ...interface{}) {
 	//TODO: send log to mq
-	l.Printf(fmt.Sprintf("<SUM>: %v", formatOrValue), values...)
+	l.Printf(fmt.Sprintf("<SUM>: %v\n", formatOrValue), values...)
 }
