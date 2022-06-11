@@ -1,0 +1,7 @@
+#IDE
+.idea
+.vscode
+#generated binary file
+.out
+#files that I want to ignore
+*_ignore*
