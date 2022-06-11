@@ -16,5 +16,5 @@ Architecture overview
 
 wherein:
 
-* `sum, sub, mul, div` are the coolest services on the planet :P
-* folks that don't login as admin can only use trial feature: calculate numbers less than 10, folks login as `admin (password admin)` can do operations with numbers up to 1000 :D
+* `sum, sub, mul, div` are the coolest services on the planet 😛
+* folks that don't login as admin can only use trial feature: calculate numbers less than 10, folks login as `admin (password admin)` can do operations with numbers up to 1000 😃
