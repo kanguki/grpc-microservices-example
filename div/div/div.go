@@ -15,10 +15,10 @@ func (s Service) Do(ctx context.Context, req *Request) (*Response, error) {
 	log.Log("service SUM get called with request %v\n", *req)
 	res := Response{}
 	if req.Term1 > s.Max || req.Term2 > s.Max ||
-		req.Term1 < s.Min || req.Term2 < s.Min {
+		req.Term1 < s.Min || req.Term2 < s.Min || req.Term2 == 0 {
 		res.Error = &Error{
 			Code:    Error_BAD_REQUEST,
-			Message: fmt.Sprintf("cannot handle number smaller than %v or bigger than %v", s.Min, s.Max),
+			Message: fmt.Sprintf("cannot handle number smaller than %v or bigger than %v nor request with Term2 = 0", s.Min, s.Max),
 		}
 		return &res, nil
 	}
