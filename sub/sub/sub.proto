@@ -1,0 +1,26 @@
+syntax = "proto3";
+option go_package = "github.com/kanguki/grpc-microservices-example/sub/sub";
+service Sub {
+	rpc Do(Request) returns (Response) {}
+}
+
+message Request {
+	int64 term1=1;
+	int64 term2=2;
+	bool isAuthorized=3;
+}
+
+message Response {
+	int64 sub=1;
+	Error error=2;
+}
+
+message Error {
+	enum Code {
+		UNAUTHORIZED = 0;
+		BAD_REQUEST = 1;
+		INTERNAL_SERVER_ERROR = 2;
+	}
+	Code code=1;
+	string message =2;
+}
