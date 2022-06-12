@@ -1,3 +1,10 @@
+# TODO
+
+* [X] grpc services
+* [X] api server
+* [ ] web interface
+* [ ] ship log to elk
+
 # What
 
 An example of how microservices interact with each other using grpc using CQRS pattern.
