@@ -2,9 +2,10 @@ package apiServer
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/kanguki/grpc-microservices-example/api/auth"
 	"github.com/kanguki/grpc-microservices-example/api/div"
-	"github.com/kanguki/grpc-microservices-example/api/log"
 	"github.com/kanguki/grpc-microservices-example/api/mul"
 	"github.com/kanguki/grpc-microservices-example/api/sub"
 	"github.com/kanguki/grpc-microservices-example/api/sum"
@@ -12,27 +13,35 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
 type Server struct {
-	Port            string
-	authClient      auth.AuthClient
-	sumClient       sum.SumClient
-	subClient       sub.SubClient
-	mulClient       mul.MulClient
-	divClient       div.DivClient
-	timeoutInSecond time.Duration
+	Port       string
+	authClient auth.AuthClient
+	sumClient  sum.SumClient
+	subClient  sub.SubClient
+	mulClient  mul.MulClient
+	divClient  div.DivClient
+	CookieTTL  time.Duration //minute
 }
 
 func NewServer() (*Server, error) {
 	server := &Server{}
 	server.setPort()
-	err := server.connectGrpcClients()
-	if err != nil {
-		return nil, err
-	}
+	server.setTime()
+	server.connectGrpcClients()
 	return server, nil
+}
+func (s *Server) setTime() {
+	_cookieTTL := os.Getenv("API_COOKIE_TTL")
+	cookieTTL, _ := strconv.ParseInt(_cookieTTL, 10, 64)
+	if cookieTTL == 0 {
+		cookieTTL = 60
+	}
+	s.CookieTTL = time.Duration(cookieTTL)
 }
 func (s *Server) setPort() {
 	port := os.Getenv("API_PORT")
@@ -41,60 +50,78 @@ func (s *Server) setPort() {
 	}
 	s.Port = port
 }
-func (s *Server) connectGrpcClients() error {
+func (s *Server) connectGrpcClients() {
+	{
+		authUrl := os.Getenv("AUTH_URL")
+		authConn, _ := grpc.Dial(authUrl,
+			grpc.WithTransportCredentials(insecure.NewCredentials()))
+		s.authClient = auth.NewAuthClient(authConn)
+	}
 	{
 		sumUrl := os.Getenv("SUM_URL")
-		sumConn, err := grpc.Dial(sumUrl,
+		sumConn, _ := grpc.Dial(sumUrl,
 			grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			log.Log("failed to dial %v: %v", sumUrl, err)
-			return err
-		}
 		s.sumClient = sum.NewSumClient(sumConn)
 	}
 	{
 		subUrl := os.Getenv("SUB_URL")
-		subConn, err := grpc.Dial(subUrl,
+		subConn, _ := grpc.Dial(subUrl,
 			grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			log.Log("failed to dial %v: %v", subUrl, err)
-			return err
-		}
 		s.subClient = sub.NewSubClient(subConn)
 	}
 	{
 		mulUrl := os.Getenv("MUL_URL")
-		mulConn, err := grpc.Dial(mulUrl,
+		mulConn, _ := grpc.Dial(mulUrl,
 			grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			log.Log("failed to dial %v: %v", mulUrl, err)
-			return err
-		}
 		s.mulClient = mul.NewMulClient(mulConn)
 	}
 	{
 		divUrl := os.Getenv("DIV_URL")
-		divConn, err := grpc.Dial(divUrl,
+		divConn, _ := grpc.Dial(divUrl,
 			grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			log.Log("failed to dial %v: %v", divUrl, err)
-			return err
-		}
 		s.divClient = div.NewDivClient(divConn)
 	}
-	return nil
 }
+
+type loginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
+	lReq := loginRequest{}
+	err := json.NewDecoder(r.Body).Decode(&lReq)
+	if err != nil {
+		w.WriteHeader(400)
+		w.Write([]byte("bad request: " + err.Error()))
+		return
+	}
+	res, err := s.authClient.Authenticate(context.Background(), &auth.LoginRequest{Username: lReq.Username, Password: lReq.Password})
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte("error authenticating user: " + err.Error()))
+		return
+	}
+	w.Header().Add("Set-Cookie", fmt.Sprintf("token=%s; expires=%s",
+		res.Token, time.Now().Add(s.CookieTTL*time.Minute).Format(http.TimeFormat)))
+	w.Write([]byte("ok"))
+}
+
+func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
+	token, _ := r.Cookie("token")
+	s.authClient.Logout(context.Background(), &auth.LogoutRequest{Token: token.Value})
+	w.Header().Add("Set-Cookie", "token=empty; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT")
+	w.Write([]byte("ok"))
+}
+
+var unauthACLs = "unauthACLs"
 
 func (s *Server) Auth(next func(http.ResponseWriter, *http.Request), acls []auth.ACL) func(
 	http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, err := r.Cookie("token")
 		if err != nil {
-			w.WriteHeader(401)
-			w.Write([]byte("UNAUTHORIZED"))
-			return
-		}
-		if time.Now().After(token.Expires) {
+			w.Header().Add("Set-Cookie", "empty; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT")
 			w.WriteHeader(401)
 			w.Write([]byte("UNAUTHORIZED"))
 			return
@@ -102,13 +129,106 @@ func (s *Server) Auth(next func(http.ResponseWriter, *http.Request), acls []auth
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
-		authResponse, err := s.authClient.Authorize(ctx, &auth.AuthorizeRequest{Token: token.Value, Acls: acls})
-		if err != nil {
-			w.WriteHeader(401)
-			w.Write([]byte("UNAUTHORIZED"))
-			return
-		}
-		ctx = context.WithValue(ctx, "acls", authResponse.UnauthorizedACLs)
+		authResponse, _ := s.authClient.Authorize(ctx, &auth.AuthorizeRequest{Token: token.Value, Acls: acls})
+		ctx = context.WithValue(ctx, unauthACLs, authResponse.UnauthorizedACLs)
 		next(w, r.WithContext(ctx))
 	}
+}
+
+func (s *Server) Calculate(w http.ResponseWriter, r *http.Request) {
+	var isAuthorized bool
+	if _unauthACLs, ok := r.Context().Value(unauthACLs).([]auth.ACL); ok && _unauthACLs == nil {
+		isAuthorized = true
+	}
+	queries := r.URL.Query()
+	_term1, _term2 := queries["term1"][0], queries["term2"][0]
+	term1, _ := strconv.ParseInt(_term1, 10, 64)
+	term2, _ := strconv.ParseInt(_term2, 10, 64)
+	operationType := strings.TrimPrefix(r.URL.Path, "/")
+	switch operationType {
+	case "sum":
+		res, _ := s.sumClient.Do(context.Background(), &sum.Request{Term1: term1, Term2: term2, IsAuthorized: isAuthorized})
+		if err := res.Error; err != nil {
+			switch err.Code {
+			case sum.Error_UNAUTHORIZED:
+				w.WriteHeader(401)
+				w.Write([]byte(err.Message))
+				return
+			case sum.Error_INTERNAL_SERVER_ERROR:
+				w.WriteHeader(500)
+				w.Write([]byte(err.Message))
+				return
+			case sum.Error_BAD_REQUEST:
+				w.WriteHeader(400)
+				w.Write([]byte(err.Message))
+				return
+			}
+		}
+		w.Write([]byte(fmt.Sprintf("%d", res.Sum)))
+		break
+	case "sub":
+		res, _ := s.subClient.Do(context.Background(), &sub.Request{Term1: term1, Term2: term2, IsAuthorized: isAuthorized})
+		if err := res.Error; err != nil {
+			switch err.Code {
+			case sub.Error_UNAUTHORIZED:
+				w.WriteHeader(401)
+				w.Write([]byte(err.Message))
+				return
+			case sub.Error_INTERNAL_SERVER_ERROR:
+				w.WriteHeader(500)
+				w.Write([]byte(err.Message))
+				return
+			case sub.Error_BAD_REQUEST:
+				w.WriteHeader(400)
+				w.Write([]byte(err.Message))
+				return
+			}
+		}
+		w.Write([]byte(fmt.Sprintf("%d", res.Sub)))
+		break
+	case "mul":
+		res, _ := s.mulClient.Do(context.Background(), &mul.Request{Term1: term1, Term2: term2, IsAuthorized: isAuthorized})
+		if err := res.Error; err != nil {
+			switch err.Code {
+			case mul.Error_UNAUTHORIZED:
+				w.WriteHeader(401)
+				w.Write([]byte(err.Message))
+				return
+			case mul.Error_INTERNAL_SERVER_ERROR:
+				w.WriteHeader(500)
+				w.Write([]byte(err.Message))
+				return
+			case mul.Error_BAD_REQUEST:
+				w.WriteHeader(400)
+				w.Write([]byte(err.Message))
+				return
+			}
+		}
+		w.Write([]byte(fmt.Sprintf("%d", res.Mul)))
+		break
+	case "div":
+		res, _ := s.divClient.Do(context.Background(), &div.Request{Term1: term1, Term2: term2, IsAuthorized: isAuthorized})
+		if err := res.Error; err != nil {
+			switch err.Code {
+			case div.Error_UNAUTHORIZED:
+				w.WriteHeader(401)
+				w.Write([]byte(err.Message))
+				return
+			case div.Error_INTERNAL_SERVER_ERROR:
+				w.WriteHeader(500)
+				w.Write([]byte(err.Message))
+				return
+			case div.Error_BAD_REQUEST:
+				w.WriteHeader(400)
+				w.Write([]byte(err.Message))
+				return
+			}
+		}
+		w.Write([]byte(fmt.Sprintf("%d", res.Div)))
+		break
+	default:
+		w.WriteHeader(400)
+		w.Write([]byte(fmt.Sprintf("operation %s is not supported", operationType)))
+	}
+
 }
