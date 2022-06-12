@@ -12,7 +12,7 @@ import (
 
 func main() {
 	port, _tokenClearDuration := os.Getenv("AUTH_PORT"), os.Getenv("TOKEN_CLEAR_DURATION")
-	tokenClearDuration, _ := strconv.Atoi(_tokenClearDuration)
+	tokenClearDuration, _ := strconv.ParseInt(_tokenClearDuration, 10, 64)
 	if port == "" {
 		port = ":4004"
 	}

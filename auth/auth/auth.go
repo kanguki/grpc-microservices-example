@@ -35,16 +35,16 @@ type Service struct {
 	mu     *sync.RWMutex
 }
 
-func NewService(db *Db, tokenClearDurationInMinute int) *Service {
+func NewService(db *Db, tokenClearDurationInMillisecond int64) *Service {
 	rights := make(map[string]map[ACL]bool)
 	mu := &sync.RWMutex{}
-	if tokenClearDurationInMinute == 0 {
-		tokenClearDurationInMinute = 24 * 60 //24 hours
+	if tokenClearDurationInMillisecond == 0 {
+		tokenClearDurationInMillisecond = 24 * 60 * 60 * 1000 //24 hours
 	}
 	go func() {
 		for {
 			select {
-			case <-time.After(time.Minute * time.Duration(tokenClearDurationInMinute)):
+			case <-time.After(time.Millisecond * time.Duration(tokenClearDurationInMillisecond)):
 				log.Log("Cleaning rights cache by schedule.")
 				for k := range rights {
 					mu.Lock()
@@ -87,7 +87,7 @@ func (s *Service) Authorize(ctx context.Context, req *AuthorizeRequest) (*Author
 			}
 		}
 	} else {
-		return nil, fmt.Errorf("user hasn't login yet or token expired")
+		return &AuthorizeResponse{UnauthorizedACLs: req.Acls}, nil
 	}
 	if len(unauthorizedACLs) == 0 {
 		unauthorizedACLs = nil

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"testing"
+	"time"
 )
 
 var service *Service
@@ -16,6 +17,16 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+func TestNewService(t *testing.T) {
+	s := NewService(nil, 10)
+	s.rights["x"] = map[ACL]bool{ACL_READ: true}
+	time.Sleep(15 * time.Millisecond)
+	if s.rights["x"] != nil {
+		t.Fatalf("cache doesn't clear by schedule. cache: %v", s.rights)
+	}
+
+}
+
 func TestLogin(t *testing.T) {
 	ctx := context.TODO()
 	{
@@ -23,6 +34,13 @@ func TestLogin(t *testing.T) {
 		res, err := service.Authenticate(ctx, &nonExistentUserRequest)
 		if err == nil || res != nil {
 			t.Fatalf("expect error User %v doesn't exist, got successful response", nonExistentUserRequest.Username)
+		}
+	}
+	{
+		wrongPasswordRequest := LoginRequest{Username: "mo", Password: "crack"}
+		res, err := service.Authenticate(ctx, &wrongPasswordRequest)
+		if err == nil || res != nil {
+			t.Fatal("expect error wrong password, got successful response")
 		}
 	}
 	{
@@ -38,8 +56,8 @@ func TestAuthorize(t *testing.T) {
 	ctx := context.TODO()
 	{
 		nonExistentTokenRequest := AuthorizeRequest{Token: "fake token", Acls: []ACL{ACL_READ}}
-		res, err := service.Authorize(ctx, &nonExistentTokenRequest)
-		if err == nil {
+		res, _ := service.Authorize(ctx, &nonExistentTokenRequest)
+		if len(res.UnauthorizedACLs) != 1 {
 			t.Fatalf("expect fake token not having right to read but got successful response %v", *res)
 		}
 	}
