@@ -1,3 +1,7 @@
+#Status
+
+Hung. I abandon my projects all the time so not sure about this repo 😅
+
 # What
 
 An example of how microservices interact with each other using grpc using CQRS pattern.
