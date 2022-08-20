@@ -15,6 +15,8 @@ I found a lot of examples of single service implementing grpc or internal functi
 
 # Usage
 
+Use files in [sh](sh) to run things
+
 # Dev note
 
 Architecture overview

@@ -4,6 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/kanguki/grpc-microservices-example/api/auth"
 	"github.com/kanguki/grpc-microservices-example/api/div"
 	"github.com/kanguki/grpc-microservices-example/api/mul"
@@ -11,11 +17,6 @@ import (
 	"github.com/kanguki/grpc-microservices-example/api/sum"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type Server struct {
@@ -232,3 +233,20 @@ func (s *Server) Calculate(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
+// func (s *Server) Cors(next func(http.ResponseWriter, *http.Request)) func(
+// 	http.ResponseWriter, *http.Request) {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		allowOrigins := os.Getenv("API_ALLOW_ORIGINS")
+// 		if allowOrigins != "" {
+// 			w.Header().Set("Access-Control-Allow-Origin", allowOrigins)
+// 		}
+// 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+// 		w.Header().Set("Access-Control-Allow-Headers", "*")
+// 		w.Header().Set("Access-Control-Allow-Credentials","true")
+// 		if r.Method == http.MethodOptions {
+// 			return
+// 		}
+// 		next(w, r)
+// 	}
+// }

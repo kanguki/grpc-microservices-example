@@ -5,3 +5,4 @@
 .out
 #files that I want to ignore
 *_ignore*
+*/bin/*
