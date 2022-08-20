@@ -1,0 +1,306 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grpc-microservice-example
+
+--- #sum
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sum
+  namespace: grpc-microservice-example
+spec:
+  selector:
+    matchLabels:
+      run: sum
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: sum
+    spec:
+      containers:
+      - name: sum
+        image: grpc-microservice-example-sum:1.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SUM_PORT
+          value: ":80"
+        ports:
+        - containerPort: 80 #then set same PORT. pod is unreachable within cluster without being exposed with a port. pod is unreachable with outside world without a service mapping port
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sum
+  namespace: grpc-microservice-example
+spec:
+  type: ClusterIP
+  selector:
+    run: sum
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 80
+      targetPort: 80
+
+#the other services are the same, shouldve used helm but I'm lazy to look into it. may change later. TODO
+--- #sub
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sub
+  namespace: grpc-microservice-example
+spec:
+  selector:
+    matchLabels:
+      run: sub
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: sub
+    spec:
+      containers:
+      - name: sub
+        image: grpc-microservice-example-sub:1.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SUB_PORT
+          value: ":80"
+        ports:
+        - containerPort: 80 #then set same PORT. pod is unreachable within cluster without being exposed with a port. pod is unreachable with outside world without a service mapping port
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sub
+  namespace: grpc-microservice-example
+spec:
+  type: ClusterIP
+  selector:
+    run: sub
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 80
+      targetPort: 80
+
+--- #mul
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mul
+  namespace: grpc-microservice-example
+spec:
+  selector:
+    matchLabels:
+      run: mul
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: mul
+    spec:
+      containers:
+      - name: mul
+        image: grpc-microservice-example-mul:1.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: MUL_PORT
+          value: ":80"
+        ports:
+        - containerPort: 80 #then set same PORT. pod is unreachable within cluster without being exposed with a port. pod is unreachable with outside world without a service mapping port
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mul
+  namespace: grpc-microservice-example
+spec:
+  type: ClusterIP
+  selector:
+    run: mul
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 80
+      targetPort: 80
+
+--- #div
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: div
+  namespace: grpc-microservice-example
+spec:
+  selector:
+    matchLabels:
+      run: div
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: div
+    spec:
+      containers:
+      - name: div
+        image: grpc-microservice-example-div:1.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: DIV_PORT
+          value: ":80"
+        ports:
+        - containerPort: 80 #then set same PORT. pod is unreachable within cluster without being exposed with a port. pod is unreachable with outside world without a service mapping port
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: div
+  namespace: grpc-microservice-example
+spec:
+  type: ClusterIP
+  selector:
+    run: div
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 80
+      targetPort: 80
+
+--- #auth
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  namespace: grpc-microservice-example
+spec:
+  selector:
+    matchLabels:
+      run: auth
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: auth
+    spec:
+      containers:
+      - name: auth
+        image: grpc-microservice-example-auth:1.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: AUTH_PORT
+          value: ":80"
+        ports:
+        - containerPort: 80 #then set same PORT. pod is unreachable within cluster without being exposed with a port. pod is unreachable with outside world without a service mapping port
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+  namespace: grpc-microservice-example
+spec:
+  type: ClusterIP
+  selector:
+    run: auth
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 80
+      targetPort: 80
+
+--- #api
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: grpc-microservice-example
+spec:
+  selector:
+    matchLabels:
+      run: api
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: api
+    spec:
+      containers:
+      - name: api
+        image: grpc-microservice-example-api:1.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: API_COOKIE_TTL
+          value: "1440" #minute
+        - name: SUM_URL
+          value: "sum:80"
+        - name: SUB_URL
+          value: "sub:80"
+        - name: MUL_URL
+          value: "mul:80"
+        - name: DIV_URL
+          value: "div:80"
+        - name: AUTH_URL
+          value: "auth:80"
+        - name: API_PORT
+          value: ":80"
+        ports:
+        - containerPort: 80 #then set same PORT. pod is unreachable within cluster without being exposed with a port. pod is unreachable with outside world without a service mapping port
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-http
+  namespace: grpc-microservice-example
+spec:
+  type: LoadBalancer
+  selector:
+    run: api
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80

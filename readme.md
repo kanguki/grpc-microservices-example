@@ -2,8 +2,9 @@
 
 * [X] grpc services
 * [X] api server
-* [ ] web interface
+* [X] deploy to k8s
 * [ ] ship log to elk
+* [ ] web interface
 
 # What
 
