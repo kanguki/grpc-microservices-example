@@ -16,7 +16,9 @@ I found a lot of examples of single service implementing grpc or internal functi
 
 # Usage
 
-Use files in [sh](sh) to run things
+Use files in [sh](sh) to run things. to play with containers, run [./sh/deploy.sh](./sh/deploy.sh)
+
+to clean things: `make clean`
 
 # Dev note
 
